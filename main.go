@@ -5,10 +5,14 @@ import (
 	"net/http"
 )
 
+var (
+	tasks  = []Task{}
+	lastID = 0
+)
+
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello, task tracker"))
-	})
+	http.HandleFunc("POST /tasks", CreateTask)
+	http.HandleFunc("GET /tasks", ReadTasks)
 
 	fmt.Println("Listening on 2525")
 	http.ListenAndServe(":2525", nil)
