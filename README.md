@@ -14,8 +14,11 @@ Task
 
 ### Rotas
 
-- `POST /tasks`: criar/adicionar task
-- `GET /tasks`: listar todas as tasks
+- `POST /tasks`: criar uma task
+- `GET /tasks`: retornar todas as tasks
+- `GET /tasks/{id}`: retornar uma task
+- `PUT /tasks/{id}`: editar uma task
+- `DELETE /tasks/{id}`: deletar uma task
 
 ### Como o programa deve funcionar/rodar (onde o usuário irá usá-lo)
 
