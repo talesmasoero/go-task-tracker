@@ -69,3 +69,45 @@ func GetTaskByID(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Error(w, "task id doesn't exists", http.StatusNotFound)
 }
+
+func UpdateTask(w http.ResponseWriter, r *http.Request) {
+	strID := r.PathValue("id")
+	if strID == "" {
+		http.Error(w, "error getting id from url", http.StatusBadRequest)
+		return
+	}
+
+	ID, err := strconv.Atoi(strID)
+	if err != nil {
+		http.Error(w, "task id must be a number", http.StatusBadRequest)
+		return
+	}
+
+	var newTask Task
+	if err := json.NewDecoder(r.Body).Decode(&newTask); err != nil {
+		http.Error(w, "error decoding request body", http.StatusBadRequest)
+		return
+	}
+
+	if newTask.Description == "" {
+		http.Error(w, "task description cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	for i, task := range tasks {
+		if ID == task.ID {
+			tasks[i].Description = newTask.Description
+
+			json, err := json.MarshalIndent(tasks[i], "", "  ")
+			if err != nil {
+				http.Error(w, "error parsing task into json", http.StatusInternalServerError)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(json)
+			return
+		}
+	}
+	http.Error(w, "task id doesn't exists", http.StatusNotFound)
+}
