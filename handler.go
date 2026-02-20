@@ -42,20 +42,14 @@ func ReadTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetTaskByID(w http.ResponseWriter, r *http.Request) {
-	strID := r.PathValue("id")
-	if strID == "" {
-		http.Error(w, "error getting id from url", http.StatusBadRequest)
-		return
-	}
-
-	ID, err := strconv.Atoi(strID)
-	if err != nil {
-		http.Error(w, "task id must be a number", http.StatusBadRequest)
+	id, err := getTaskID(r)
+	if err != "" {
+		http.Error(w, err, http.StatusBadRequest)
 		return
 	}
 
 	for _, task := range tasks {
-		if ID == task.ID {
+		if id == task.ID {
 			json, err := json.MarshalIndent(task, "", "  ")
 			if err != nil {
 				http.Error(w, "error parsing task into json", http.StatusInternalServerError)
@@ -71,15 +65,9 @@ func GetTaskByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateTask(w http.ResponseWriter, r *http.Request) {
-	strID := r.PathValue("id")
-	if strID == "" {
-		http.Error(w, "error getting id from url", http.StatusBadRequest)
-		return
-	}
-
-	ID, err := strconv.Atoi(strID)
-	if err != nil {
-		http.Error(w, "task id must be a number", http.StatusBadRequest)
+	id, err := getTaskID(r)
+	if err != "" {
+		http.Error(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -95,7 +83,7 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i, task := range tasks {
-		if ID == task.ID {
+		if id == task.ID {
 			tasks[i].Description = newTask.Description
 
 			json, err := json.MarshalIndent(tasks[i], "", "  ")
@@ -110,4 +98,17 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	http.Error(w, "task id doesn't exists", http.StatusNotFound)
+}
+
+func getTaskID(r *http.Request) (int, string) {
+	strID := r.PathValue("id")
+	if strID == "" {
+		return 0, "error getting id from url"
+	}
+
+	id, err := strconv.Atoi(strID)
+	if err != nil {
+		return 0, "task id must be a number"
+	}
+	return id, ""
 }
