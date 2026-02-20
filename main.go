@@ -15,6 +15,7 @@ func main() {
 	http.HandleFunc("GET /tasks", ReadTasks)
 	http.HandleFunc("GET /tasks/{id}", GetTaskByID)
 	http.HandleFunc("PUT /tasks/{id}", UpdateTask)
+	http.HandleFunc("DELETE /tasks/{id}", DeleteTask)
 
 	fmt.Println("Listening on 2525")
 	http.ListenAndServe(":2525", nil)

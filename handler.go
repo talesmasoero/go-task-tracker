@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"slices"
 	"strconv"
 )
 
@@ -94,6 +95,24 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(json)
+			return
+		}
+	}
+	http.Error(w, "task id doesn't exists", http.StatusNotFound)
+}
+
+func DeleteTask(w http.ResponseWriter, r *http.Request) {
+	id, err := getTaskID(r)
+	if err != "" {
+		http.Error(w, err, http.StatusBadRequest)
+		return
+	}
+
+	for i, task := range tasks {
+		if id == task.ID {
+			tasks = slices.Delete(tasks, i, i+1)
+
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 	}
