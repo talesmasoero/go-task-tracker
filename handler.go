@@ -13,6 +13,11 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error decoding request body", http.StatusBadRequest)
 		return
 	}
+
+	if task.Description == "" {
+		http.Error(w, "task description cannot be empty", http.StatusBadRequest)
+		return
+	}
 	task.ID = lastID + 1
 
 	tasks = append(tasks, task)
