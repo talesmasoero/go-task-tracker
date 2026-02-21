@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"slices"
 	"strconv"
@@ -51,8 +52,8 @@ func ReadTasks(w http.ResponseWriter, r *http.Request) {
 
 func GetTaskByID(w http.ResponseWriter, r *http.Request) {
 	id, err := getTaskID(r)
-	if err != "" {
-		http.Error(w, err, http.StatusBadRequest)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -74,8 +75,8 @@ func GetTaskByID(w http.ResponseWriter, r *http.Request) {
 
 func UpdateTask(w http.ResponseWriter, r *http.Request) {
 	id, err := getTaskID(r)
-	if err != "" {
-		http.Error(w, err, http.StatusBadRequest)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -110,8 +111,8 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 
 func DeleteTask(w http.ResponseWriter, r *http.Request) {
 	id, err := getTaskID(r)
-	if err != "" {
-		http.Error(w, err, http.StatusBadRequest)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -126,15 +127,15 @@ func DeleteTask(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "task id doesn't exists", http.StatusNotFound)
 }
 
-func getTaskID(r *http.Request) (int, string) {
+func getTaskID(r *http.Request) (int, error) {
 	strID := r.PathValue("id")
 	if strID == "" {
-		return 0, "error getting id from url"
+		return 0, errors.New("error getting id from url")
 	}
 
 	id, err := strconv.Atoi(strID)
 	if err != nil {
-		return 0, "task id must be a number"
+		return 0, errors.New("task id must be a number")
 	}
-	return id, ""
+	return id, nil
 }
