@@ -1,14 +1,21 @@
-package main
+package handler
 
 import (
 	"encoding/json"
 	"net/http"
 	"slices"
 	"strconv"
+
+	"github.com/talesmasoero/go-task-tracker/internal/domain"
+)
+
+var (
+	tasks  []domain.Task
+	lastID int
 )
 
 func CreateTask(w http.ResponseWriter, r *http.Request) {
-	var task Task
+	var task domain.Task
 
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
 		http.Error(w, "error decoding request body", http.StatusBadRequest)
@@ -72,7 +79,7 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var newTask Task
+	var newTask domain.Task
 	if err := json.NewDecoder(r.Body).Decode(&newTask); err != nil {
 		http.Error(w, "error decoding request body", http.StatusBadRequest)
 		return
