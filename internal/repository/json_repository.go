@@ -34,19 +34,46 @@ func (repo *JSONRepository) Save(task domain.Task) (int, error) {
 
 	tasks = append(tasks, task)
 
-	newJson, err := json.MarshalIndent(tasks, "", "  ")
-	if err != nil {
-		return 0, fmt.Errorf("could not marshal json: %w", err)
-	}
-
-	if err := os.WriteFile(repo.filepath, newJson, filemode); err != nil {
-		return 0, fmt.Errorf("could not save file: %w", err)
+	if err := repo.saveTasks(tasks); err != nil {
+		return 0, err
 	}
 	return task.ID, nil
 }
 
 func (repo *JSONRepository) ReadAll() ([]domain.Task, error) {
 	return repo.loadTasks()
+}
+
+func (repo *JSONRepository) GetByID(id int) (domain.Task, error) {
+	tasks, err := repo.loadTasks()
+	if err != nil {
+		return domain.Task{}, err
+	}
+
+	idx, err := repo.hasTask(tasks, id)
+	if err != nil {
+		return domain.Task{}, err
+	}
+	return tasks[idx], nil
+}
+
+func (repo *JSONRepository) Update(newTask domain.Task) error {
+	tasks, err := repo.loadTasks()
+	if err != nil {
+		return err
+	}
+
+	idx, err := repo.hasTask(tasks, newTask.ID)
+	if err != nil {
+		return err
+	}
+
+	tasks[idx].Description = newTask.Description
+
+	if err := repo.saveTasks(tasks); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (repo *JSONRepository) loadTasks() ([]domain.Task, error) {
@@ -68,4 +95,26 @@ func (repo *JSONRepository) loadTasks() ([]domain.Task, error) {
 		return nil, fmt.Errorf("could not unmarshal json: %w", err)
 	}
 	return tasks, nil
+}
+
+func (repo *JSONRepository) saveTasks(tasks []domain.Task) error {
+	jsonData, err := json.MarshalIndent(tasks, "", "  ")
+	if err != nil {
+		return fmt.Errorf("could not marshal json: %w", err)
+	}
+
+	if err := os.WriteFile(repo.filepath, jsonData, filemode); err != nil {
+		return fmt.Errorf("could not save file: %w", err)
+	}
+	return nil
+}
+
+// Returns task index if exists
+func (repo *JSONRepository) hasTask(tasks []domain.Task, id int) (int, error) {
+	for i, task := range tasks {
+		if id == task.ID {
+			return i, nil
+		}
+	}
+	return 0, errors.New("could not find task")
 }
