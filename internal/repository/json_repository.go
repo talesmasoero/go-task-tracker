@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/talesmasoero/go-task-tracker/internal/domain"
 )
@@ -69,6 +70,25 @@ func (repo *JSONRepository) Update(newTask domain.Task) error {
 	}
 
 	tasks[idx].Description = newTask.Description
+
+	if err := repo.saveTasks(tasks); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (repo *JSONRepository) Delete(id int) error {
+	tasks, err := repo.loadTasks()
+	if err != nil {
+		return err
+	}
+
+	idx, err := repo.hasTask(tasks, id)
+	if err != nil {
+		return err
+	}
+
+	tasks = slices.Delete(tasks, idx, idx+1)
 
 	if err := repo.saveTasks(tasks); err != nil {
 		return err
