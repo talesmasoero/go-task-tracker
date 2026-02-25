@@ -51,7 +51,7 @@ func (repo *JSONRepository) GetByID(id int) (domain.Task, error) {
 		return domain.Task{}, err
 	}
 
-	idx, err := repo.hasTask(tasks, id)
+	idx, err := repo.findIndexByID(tasks, id)
 	if err != nil {
 		return domain.Task{}, err
 	}
@@ -64,7 +64,7 @@ func (repo *JSONRepository) Update(newTask domain.Task) error {
 		return err
 	}
 
-	idx, err := repo.hasTask(tasks, newTask.ID)
+	idx, err := repo.findIndexByID(tasks, newTask.ID)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (repo *JSONRepository) Delete(id int) error {
 		return err
 	}
 
-	idx, err := repo.hasTask(tasks, id)
+	idx, err := repo.findIndexByID(tasks, id)
 	if err != nil {
 		return err
 	}
@@ -130,11 +130,11 @@ func (repo *JSONRepository) saveTasks(tasks []domain.Task) error {
 }
 
 // Returns task index if exists
-func (repo *JSONRepository) hasTask(tasks []domain.Task, id int) (int, error) {
+func (repo *JSONRepository) findIndexByID(tasks []domain.Task, id int) (int, error) {
 	for i, task := range tasks {
 		if id == task.ID {
 			return i, nil
 		}
 	}
-	return 0, errors.New("could not find task")
+	return -1, errors.New("could not find task")
 }
