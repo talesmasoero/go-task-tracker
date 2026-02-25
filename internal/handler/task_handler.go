@@ -4,18 +4,30 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"slices"
 	"strconv"
 
 	"github.com/talesmasoero/go-task-tracker/internal/domain"
 )
 
-var (
-	tasks  []domain.Task
-	lastID int
-)
+type TaskRepository interface {
+	Save(task domain.Task) (domain.Task, error)
+	ReadAll() ([]domain.Task, error)
+	GetByID(id int) (domain.Task, error)
+	Update(task domain.Task) error
+	Delete(id int) error
+}
 
-func CreateTask(w http.ResponseWriter, r *http.Request) {
+type TaskHandler struct {
+	repo TaskRepository
+}
+
+func NewTaskHandler(repo TaskRepository) *TaskHandler {
+	return &TaskHandler{
+		repo: repo,
+	}
+}
+
+func (th *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	var task domain.Task
 
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
@@ -27,19 +39,24 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "task description cannot be empty", http.StatusBadRequest)
 		return
 	}
-	task.ID = lastID + 1
 
-	tasks = append(tasks, task)
-	lastID++
+	task, err := th.repo.Save(task)
+	if err != nil {
+		http.Error(w, "could not save task", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-
 	json.NewEncoder(w).Encode(task)
 }
 
-func ReadTasks(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+func (th *TaskHandler) ReadTasks(w http.ResponseWriter, r *http.Request) {
+	tasks, err := th.repo.ReadAll()
+	if err != nil {
+		http.Error(w, "could not read tasks", http.StatusInternalServerError)
+		return
+	}
 
 	json, err := json.MarshalIndent(tasks, "", "  ")
 	if err != nil {
@@ -47,13 +64,20 @@ func ReadTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(json)
 }
 
-func GetTaskByID(w http.ResponseWriter, r *http.Request) {
-	id, err := getTaskID(r)
+func (th *TaskHandler) GetTaskByID(w http.ResponseWriter, r *http.Request) {
+	id, err := th.getUrlID(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	tasks, err := th.repo.ReadAll()
+	if err != nil {
+		http.Error(w, "could not read tasks", http.StatusInternalServerError)
 		return
 	}
 
@@ -73,14 +97,17 @@ func GetTaskByID(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "task id doesn't exists", http.StatusNotFound)
 }
 
-func UpdateTask(w http.ResponseWriter, r *http.Request) {
-	id, err := getTaskID(r)
+func (th *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
+	id, err := th.getUrlID(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	var newTask domain.Task
+	newTask := domain.Task{
+		ID: id,
+	}
+
 	if err := json.NewDecoder(r.Body).Decode(&newTask); err != nil {
 		http.Error(w, "error decoding request body", http.StatusBadRequest)
 		return
@@ -91,43 +118,28 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for i, task := range tasks {
-		if id == task.ID {
-			tasks[i].Description = newTask.Description
-
-			json, err := json.MarshalIndent(tasks[i], "", "  ")
-			if err != nil {
-				http.Error(w, "error parsing task into json", http.StatusInternalServerError)
-				return
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(json)
-			return
-		}
+	// Talvez retornar a task, igual na Save para receber a task atualizada no front
+	if err := th.repo.Update(newTask); err != nil {
+		http.Error(w, "error updating task", http.StatusInternalServerError)
+		return
 	}
-	http.Error(w, "task id doesn't exists", http.StatusNotFound)
 }
 
-func DeleteTask(w http.ResponseWriter, r *http.Request) {
-	id, err := getTaskID(r)
+func (th *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
+	id, err := th.getUrlID(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	for i, task := range tasks {
-		if id == task.ID {
-			tasks = slices.Delete(tasks, i, i+1)
-
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
+	if err := th.repo.Delete(id); err != nil {
+		http.Error(w, "error deleting task", http.StatusInternalServerError)
+		return
 	}
-	http.Error(w, "task id doesn't exists", http.StatusNotFound)
+	w.WriteHeader(http.StatusNoContent)
 }
 
-func getTaskID(r *http.Request) (int, error) {
+func (th *TaskHandler) getUrlID(r *http.Request) (int, error) {
 	strID := r.PathValue("id")
 	if strID == "" {
 		return 0, errors.New("error getting id from url")

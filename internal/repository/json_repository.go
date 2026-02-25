@@ -22,10 +22,10 @@ func NewJSONRepository(filepath string) *JSONRepository {
 	}
 }
 
-func (repo *JSONRepository) Save(task domain.Task) (int, error) {
+func (repo *JSONRepository) Save(task domain.Task) (domain.Task, error) {
 	tasks, err := repo.loadTasks()
 	if err != nil {
-		return 0, err
+		return domain.Task{}, err
 	}
 
 	task.ID = 1
@@ -36,9 +36,9 @@ func (repo *JSONRepository) Save(task domain.Task) (int, error) {
 	tasks = append(tasks, task)
 
 	if err := repo.saveTasks(tasks); err != nil {
-		return 0, err
+		return domain.Task{}, err
 	}
-	return task.ID, nil
+	return task, nil
 }
 
 func (repo *JSONRepository) ReadAll() ([]domain.Task, error) {
