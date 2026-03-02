@@ -6,17 +6,19 @@ import (
 
 	"github.com/talesmasoero/go-task-tracker/internal/handler"
 	"github.com/talesmasoero/go-task-tracker/internal/repository"
+	"github.com/talesmasoero/go-task-tracker/internal/service"
 )
 
 func main() {
 	repo := repository.NewJSONRepository("test.json")
-	h := handler.NewTaskHandler(repo)
+	svc := service.NewTaskService(repo)
+	hdlr := handler.NewTaskHandler(svc)
 
-	http.HandleFunc("POST /tasks", h.CreateTask)
-	http.HandleFunc("GET /tasks", h.ReadTasks)
-	http.HandleFunc("GET /tasks/{id}", h.GetTaskByID)
-	http.HandleFunc("PUT /tasks/{id}", h.UpdateTask)
-	http.HandleFunc("DELETE /tasks/{id}", h.DeleteTask)
+	http.HandleFunc("POST /tasks", hdlr.CreateTask)
+	http.HandleFunc("GET /tasks", hdlr.ReadTasks)
+	http.HandleFunc("GET /tasks/{id}", hdlr.GetTaskByID)
+	http.HandleFunc("PUT /tasks/{id}", hdlr.UpdateTask)
+	http.HandleFunc("DELETE /tasks/{id}", hdlr.DeleteTask)
 
 	fmt.Println("Listening on 2525")
 	http.ListenAndServe(":2525", nil)
